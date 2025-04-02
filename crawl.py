@@ -68,4 +68,4 @@ payload = {
 response = requests.post(url, headers=headers, data=json.dumps(payload))
 
 print("응답 코드:", response.status_code)
-print("응답 내용:", response.text)
+print("응답 내용::", response.text)
