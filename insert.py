@@ -164,43 +164,45 @@ def collect_multi_days_and_save():
 
     # CSV로 저장
     save_to_csv(schedules_all)
-
-
-# 💾 CSV 저장 함수
+    
 def save_to_csv(schedules_dict, output_dir="./output"):
     os.makedirs(output_dir, exist_ok=True)
 
+    # 항공편 정보와 가격 정보를 따로 저장할 리스트
     flight_rows = []
     price_rows = []
 
     for info in schedules_dict.values():
+        # 항공편 정보 저장
         flight_rows.append({
-            "CODE": info.get("flight_code"),
+            "ID": info.get("flight_code"),  # flight_code는 ID로 저장
             "DEPARTURE_DTM": info.get("dep_time"),
             "ARRIVAL_DTM": info.get("arr_time"),
             "DEP_AIRPORT_CODE": info.get("dep_airport"),
             "ARR_AIRPORT_CODE": info.get("arr_airport"),
-            "DURATION": info.get("duration"),
-            "DEPARTURE_DATE": info.get("departure_date")
+            "ROUTE_ID": "1",  # 하드코딩된 값 (예시), 실제로는 외부 데이터를 사용해야 할 수도 있습니다.
+            "AIRLINE_ID": "1"  # 하드코딩된 값 (예시), 실제로는 외부 데이터를 사용해야 할 수도 있습니다.
         })
 
+        # 가격 정보가 있는 경우에만 가격 정보를 저장
         if "total_price" in info:
             price_rows.append({
-                "CODE": info.get("flight_code"),
+                "ID": f"{info.get('flight_code')}_price",  # 유니크한 ID로 항공편 코드+_price
                 "SEARCH_DATE": info.get("search_date"),
                 "PRICE": info["total_price"],
-                "FARE": info["fare"],
-                "TAX": info["tax"],
-                "QCHARGE": info["qcharge"],
-                "DEPARTURE_DATE": info.get("departure_date")
+                "flight_info_id": info.get("flight_code")  # flight_info_id는 flight_code와 연결
             })
 
-    pd.DataFrame(flight_rows).to_csv(f"{output_dir}/flight_info.csv", index=False, encoding="utf-8-sig")
-    pd.DataFrame(price_rows).to_csv(f"{output_dir}/price_info.csv", index=False, encoding="utf-8-sig")
+    # CSV 파일로 저장
+    flight_info_df = pd.DataFrame(flight_rows)
+    price_info_df = pd.DataFrame(price_rows)
+
+    flight_info_df.to_csv(f"{output_dir}/flight_info.csv", index=False, encoding="utf-8-sig")
+    price_info_df.to_csv(f"{output_dir}/price_info.csv", index=False, encoding="utf-8-sig")
 
     print("✅ CSV 저장 완료!")
 
-
+    
 # 🏁 실행
 if __name__ == "__main__":
     collect_multi_days_and_save()
