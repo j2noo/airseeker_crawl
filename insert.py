@@ -200,7 +200,7 @@ def save_to_csv(schedules_dict, output_dir="./output"):
     flight_info_df.to_csv(f"{output_dir}/flight_info.csv", index=False, encoding="utf-8-sig")
     price_info_df.to_csv(f"{output_dir}/price_info.csv", index=False, encoding="utf-8-sig")
 
-    print("✅ CSV 저장 완료!!")
+    print("✅ CSV 저장 완료!!!")
 
     
 # 🏁 실행
