@@ -57,7 +57,7 @@ def insert_data_to_db():
     cursor.close()
     connection.close()
 
-    print("✅ 데이터베이스에 성공적으로 삽입되었습니다!")
+    print("✅ 데이터베이스에 성공적으로 삽입되었습니다!!")
 
 
 # 실행
