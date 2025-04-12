@@ -152,80 +152,55 @@ def collect_flight_data(departure_airport, arrival_airport, departure_date, max_
 
 
 # ✨ 전체 수집 & 저장 로직
-def collect_multi_days_and_save(departure_airport, arrival_airport):
+def collect_multi_days_and_save():
     today = datetime.today()
     schedules_all = {}
 
     for delta in range(1, 4):  # +1일 ~ +3일
         target_date = (today + timedelta(days=delta)).strftime("%Y%m%d")
-        print(f"\n📅 {departure_airport}_{arrival_airport} 수집 중: {target_date}")  # 출발지, 도착지 정보 추가
-        result = collect_flight_data(departure_airport, arrival_airport, target_date)
+        print(f"\n📅 수집 중: {target_date}")
+        result = collect_flight_data("ICN", "DAD", target_date)
         schedules_all.update(result)
-        print(f"✅ {departure_airport}_{arrival_airport} 수집 완료: {target_date} 가격 개수 : {len(result)} 누적 개수 : {len(schedules_all)}")
 
-    # 수집 완료 후 파일 저장
-    save_to_csv(schedules_all, departure_airport, arrival_airport)
+    # CSV로 저장
+    save_to_csv(schedules_all)
 
 
-def save_to_csv(schedules_dict, departure_airport, arrival_airport, output_dir="./output"):
+# 💾 CSV 저장 함수
+def save_to_csv(schedules_dict, output_dir="./output"):
     os.makedirs(output_dir, exist_ok=True)
 
-    # 항공편 정보와 가격 정보를 따로 저장할 리스트
     flight_rows = []
     price_rows = []
 
     for info in schedules_dict.values():
-        # FLIGHT_INFO_ID를 날짜-노선-편명 형식으로 생성
-        flight_info_id = f"{info.get('departure_date')}{info.get('dep_airport')}{info.get('arr_airport')}{info.get('flight_code')}"
-
-        # 항공편 정보 저장
         flight_rows.append({
-            "ID": flight_info_id,  # 유니크한 ID로 생성된 flight_info_id 사용
-            "DEPARTURE_DTM": info.get("dep_time"),  # 출발 시각
-            "ARRIVAL_DTM": info.get("arr_time"),    # 도착 시각
-            "CODE": info.get("flight_code"),        # 항공편 코드 (예: LJ881)
-            "ROUTE_ID": "1",                        # 하드코딩된 값 (예시), 실제로는 외부 데이터를 사용해야 할 수도 있습니다.
-            "AIRLINE_ID": "1",                      # 하드코딩된 값 (예시), 실제로는 외부 데이터를 사용해야 할 수도 있습니다.
-            "CREATE_AT": pd.Timestamp.now(),       # 생성일
-            "UPDATE_AT": pd.Timestamp.now(),       # 수정일
-            "DELETE_AT": None,                     # 삭제일 (현재는 None)
-            "DELETE_YN": "N"                       # 삭제 여부 (현재는 'N')
+            "CODE": info.get("flight_code"),
+            "DEPARTURE_DTM": info.get("dep_time"),
+            "ARRIVAL_DTM": info.get("arr_time"),
+            "DEP_AIRPORT_CODE": info.get("dep_airport"),
+            "ARR_AIRPORT_CODE": info.get("arr_airport"),
+            "DURATION": info.get("duration"),
+            "DEPARTURE_DATE": info.get("departure_date")
         })
 
-        # 가격 정보가 있는 경우에만 가격 정보를 저장
         if "total_price" in info:
             price_rows.append({
-                "SEARCH_DATE": info.get("search_date"),    # 검색일
-                "PRICE": info["total_price"],              # 가격
-                "FLIGHT_INFO_ID": flight_info_id,  # 생성된 유니크한 FLIGHT_INFO_ID
-                "CREATE_AT": pd.Timestamp.now(),          # 생성일
-                "UPDATE_AT": pd.Timestamp.now(),          # 수정일
-                "DELETE_AT": None,                        # 삭제일 (현재는 None)
-                "DELETE_YN": "N"                          # 삭제 여부 (현재는 'N')
+                "CODE": info.get("flight_code"),
+                "SEARCH_DATE": info.get("search_date"),
+                "PRICE": info["total_price"],
+                "FARE": info["fare"],
+                "TAX": info["tax"],
+                "QCHARGE": info["qcharge"],
+                "DEPARTURE_DATE": info.get("departure_date")
             })
 
-    # CSV 파일로 저장
-    flight_info_df = pd.DataFrame(flight_rows)
-    price_info_df = pd.DataFrame(price_rows)
+    pd.DataFrame(flight_rows).to_csv(f"{output_dir}/flight_info.csv", index=False, encoding="utf-8-sig")
+    pd.DataFrame(price_rows).to_csv(f"{output_dir}/price_info.csv", index=False, encoding="utf-8-sig")
 
-    # 파일 저장 경로에서 CSV로 내보내기
-    flight_info_df.to_csv(f"{output_dir}/flight_info_{departure_airport}_{arrival_airport}.csv", index=False, encoding="utf-8-sig")
-    price_info_df.to_csv(f"{output_dir}/price_{departure_airport}_{arrival_airport}.csv", index=False, encoding="utf-8-sig")
-
-    # 수집 완료 로그 출력
-    print(f"✅ {departure_airport}_{arrival_airport} CSV 저장 완료!")
-    print(f"  - 항공편 개수: {len(flight_info_df)}")
-    print(f"  - 가격 개수: {len(price_info_df)}")
+    print("✅ CSV 저장 완료!")
 
 
 # 🏁 실행
 if __name__ == "__main__":
-    # 출발지와 도착지의 조합 리스트 (예: ICN-DAD, DAD-ICN)
-    airport_pairs = [
-        ("ICN", "DAD"),
-        ("DAD", "ICN")
-    ]
-
-    # 각 공항 쌍에 대해 수집 함수 실행
-    for departure_airport, arrival_airport in airport_pairs:
-        collect_multi_days_and_save(departure_airport, arrival_airport)
+    collect_multi_days_and_save()
