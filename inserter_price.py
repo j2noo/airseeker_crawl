@@ -1,21 +1,13 @@
 import cx_Oracle
 import pandas as pd
+import sys
 
-
-# Oracle DB 연결 설정
-def get_db_connection():
-    dsn = cx_Oracle.makedsn("localhost", 1521, service_name="XE")  # 로컬호스트와 SID 사용
-    connection = cx_Oracle.connect(user="C##DDD", password="123123", dsn=dsn)
-    return connection
-
-
-# 가격 데이터를 읽어 DB에 삽입
-def insert_price_data():
+def insert_price_data(file_name):
     connection = get_db_connection()
     cursor = connection.cursor()
 
     # price_info.csv 파일 읽기
-    price_df = pd.read_csv('output/price_info.csv')
+    price_df = pd.read_csv(file_name)
 
     # 날짜 컬럼을 datetime 형식으로 변환
     price_df['SEARCH_DATE'] = pd.to_datetime(price_df['SEARCH_DATE'], errors='coerce')
@@ -42,9 +34,17 @@ def insert_price_data():
     cursor.close()
     connection.close()
 
-    print("✅ 가격 데이터베이스에 성공적으로 삽입되었습니다!!")
+    print("✅ 가격 데이터베이스에 성공적으로 삽입되었습니다!!\n")
 
+def get_db_connection():
+    dsn = cx_Oracle.makedsn("localhost", 1521, service_name="XE")
+    connection = cx_Oracle.connect(user="C##DDD", password="123123", dsn=dsn)
+    return connection
 
-# 실행
 if __name__ == "__main__":
-    insert_price_data()
+    if len(sys.argv) != 2:
+        print("$python starter.py 를 통해 실행하세요")
+        sys.exit(1)
+
+    file_name = sys.argv[1]
+    insert_price_data(file_name)
