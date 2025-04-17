@@ -2,7 +2,6 @@ import cx_Oracle
 import pandas as pd
 import sys
 
-
 def insert_flight_data(file_name):
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -16,20 +15,39 @@ def insert_flight_data(file_name):
     flight_df['CREATE_AT'] = pd.to_datetime(flight_df['CREATE_AT'], errors='coerce')
     flight_df['UPDATE_AT'] = pd.to_datetime(flight_df['UPDATE_AT'], errors='coerce')
 
-    for index, row in flight_df.iterrows():
-        # ID로 이미 존재하는 항공편이 있는지 확인
+    # ✅ AIRLINE 테이블에서 CODE → ID 매핑 딕셔너리 만들기
+    cursor.execute("SELECT ID, CODE FROM C##DDD.AIRLINE")
+    airline_rows = cursor.fetchall()
+    airline_map = {code: id for id, code in airline_rows}
+
+    # ✅ flight_df['AIRLINE_ID']는 코드임 → 숫자 ID로 매핑
+    flight_df['AIRLINE_ID'] = flight_df['AIRLINE_ID'].map(airline_map)
+
+    # ✅ 매핑되지 않은 코드가 있으면 경고 출력 후 종료
+    if flight_df['AIRLINE_ID'].isnull().any():
+        missing = flight_df[flight_df['AIRLINE_ID'].isnull()]
+        print("❌ 매핑되지 않은 항공사 코드가 있습니다:")
+        print(missing[['CODE']].drop_duplicates())
+        sys.exit(1)
+
+    for _, row in flight_df.iterrows():
+        # 중복 체크
         cursor.execute("""
             SELECT COUNT(1) FROM C##DDD.FLIGHT_INFO WHERE ID = :ID
-        """, {
-            "ID": row['ID']
-        })
+        """, {"ID": row['ID']})
 
-        # 항공편이 존재하지 않으면 삽입
         if cursor.fetchone()[0] == 0:
-
             cursor.execute("""
-                INSERT INTO C##DDD.FLIGHT_INFO (ID, DEPARTURE_DTM, ARRIVAL_DTM, CODE, ROUTE_ID, AIRLINE_ID, CREATE_AT, UPDATE_AT, DELETE_AT, DELETE_YN)
-                VALUES (:ID, :DEPARTURE_DTM, :ARRIVAL_DTM, :CODE, :ROUTE_ID, :AIRLINE_ID, :CREATE_AT, :UPDATE_AT, NULL, :DELETE_YN)
+                INSERT INTO C##DDD.FLIGHT_INFO (
+                    ID, DEPARTURE_DTM, ARRIVAL_DTM, CODE,
+                    ROUTE_ID, AIRLINE_ID, CREATE_AT, UPDATE_AT,
+                    DELETE_AT, DELETE_YN
+                )
+                VALUES (
+                    :ID, :DEPARTURE_DTM, :ARRIVAL_DTM, :CODE,
+                    :ROUTE_ID, :AIRLINE_ID, :CREATE_AT, :UPDATE_AT,
+                    NULL, :DELETE_YN
+                )
             """, {
                 "ID": row['ID'],
                 "DEPARTURE_DTM": row['DEPARTURE_DTM'],
@@ -39,12 +57,9 @@ def insert_flight_data(file_name):
                 "AIRLINE_ID": row['AIRLINE_ID'],
                 "CREATE_AT": row['CREATE_AT'],
                 "UPDATE_AT": row['UPDATE_AT'],
-                # "DELETE_AT":NULL
                 "DELETE_YN": row['DELETE_YN']
             })
 
-
-    # 커밋 후 연결 종료
     connection.commit()
     cursor.close()
     connection.close()
@@ -54,8 +69,7 @@ def insert_flight_data(file_name):
 
 def get_db_connection():
     dsn = cx_Oracle.makedsn("localhost", 1521, service_name="XE")
-    connection = cx_Oracle.connect(user="C##DDD", password="123123", dsn=dsn)
-    return connection
+    return cx_Oracle.connect(user="C##DDD", password="123123", dsn=dsn)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,13 @@ def run_crawler(departure_airport, arrival_airport, route_id, date_suffix):
     except subprocess.CalledProcessError as e:
         print(f"Error occurred while running crawler: {e}")
 
+def run_insert_airline(file_name):
+    try:
+        print(f"✈️ {departure_airport}_{arrival_airport} AIRLINE DB Inserter 실행 요청")
+        subprocess.run(['python', 'inserter_airline.py', file_name], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred while running insert_airline: {e}")
+
 
 def run_insert_flight(file_name):
     try:
@@ -44,9 +51,14 @@ if __name__ == "__main__":
         # 파일명 설정
         flight_file = f"output/flight_info_{departure_airport}_{arrival_airport}_{date_suffix}.csv"
         price_file = f"output/price_{departure_airport}_{arrival_airport}_{date_suffix}.csv"
+        airline_file = "output/airline.csv"
 
+        # 항공사 데이터 삽입
+        run_insert_airline(airline_file)
+        
         # 항공편 데이터 삽입
         run_insert_flight(flight_file)
 
         # 가격 데이터 삽입
         run_insert_price(price_file)
+

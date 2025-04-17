@@ -120,7 +120,7 @@ def collect_flight_data(departure_airport, arrival_airport, departure_date, max_
                             "arr_time": arr_time,
                             "duration": f"{journey_time[0]}시간 {journey_time[1]}분",
                             "appeared_in": [],
-                            "search_date": datetime.today().strftime("%Y-%m-%d"),
+                            "search_date": datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
                             "departure_date": departure_date
                         }
 
@@ -146,7 +146,7 @@ def collect_flight_data(departure_airport, arrival_airport, departure_date, max_
                     "arr_time": "--",
                     "duration": "--",
                     "appeared_in": [],
-                    "search_date": datetime.today().strftime("%Y-%m-%d"),
+                    "search_date": datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
                     "departure_date": departure_date
                 })
 
@@ -176,15 +176,18 @@ def collect_multi_days_and_save(departure_airport, arrival_airport):
     schedules_all = {}
     airlines_all = {}
 
-    for delta in range(1, 101):
+    for delta in range(1, 120):
         target_date = (today + timedelta(days=delta)).strftime("%Y%m%d")
         print(f"\n📅 {departure_airport}_{arrival_airport} 수집 중: {target_date}")
         schedules, airlines = collect_flight_data(departure_airport, arrival_airport, target_date)
         schedules_all.update(schedules)
         airlines_all.update(airlines)
 
-    save_to_csv(schedules_all, departure_airport, arrival_airport, airlines_all)
+        # ✅ 여기 추가!
+        count_with_price = sum(1 for s in schedules.values() if "total_price" in s)
+        print(f"✅ 수집 완료: {target_date} (가격 {count_with_price}건, 누적 총 {len(schedules_all)}건)")
 
+    save_to_csv(schedules_all, departure_airport, arrival_airport, airlines_all)
 
 def save_to_csv(schedules_dict, departure_airport, arrival_airport, airline_dict, output_dir="./output"):
     global route_id, date_suffix
@@ -214,11 +217,7 @@ def save_to_csv(schedules_dict, departure_airport, arrival_airport, airline_dict
             price_rows.append({
                 "SEARCH_DATE": info.get("search_date"),
                 "PRICE": info["total_price"],
-                "FLIGHT_INFO_ID": flight_info_id,
-                "CREATE_AT": pd.Timestamp.now(),
-                "UPDATE_AT": pd.Timestamp.now(),
-                "DELETE_AT": None,
-                "DELETE_YN": "N"
+                "FLIGHT_INFO_ID": flight_info_id
             })
 
     airline_rows = []
@@ -234,11 +233,21 @@ def save_to_csv(schedules_dict, departure_airport, arrival_airport, airline_dict
             "DELETE_YN": "N"
         })
 
-    pd.DataFrame(flight_rows).to_csv(f"{output_dir}/flight_info_{departure_airport}_{arrival_airport}_{date_suffix}.csv", index=False, encoding="utf-8-sig")
-    pd.DataFrame(price_rows).to_csv(f"{output_dir}/price_{departure_airport}_{arrival_airport}_{date_suffix}.csv", index=False, encoding="utf-8-sig")
-    pd.DataFrame(airline_rows).drop_duplicates(subset=["CODE"]).to_csv(f"{output_dir}/airline.csv", index=False, encoding="utf-8-sig")
+    # 파일 경로 정의
+    flight_file = f"{output_dir}/flight_info_{departure_airport}_{arrival_airport}_{date_suffix}.csv"
+    price_file = f"{output_dir}/price_{departure_airport}_{arrival_airport}_{date_suffix}.csv"
+    airline_file = f"{output_dir}/airline.csv"
 
-    print(f"✅ 모든 CSV 저장 완료! (항공편: {len(flight_rows)} / 가격: {len(price_rows)} / 항공사: {len(airline_rows)})")
+    # CSV 저장
+    pd.DataFrame(flight_rows).to_csv(flight_file, index=False, encoding="utf-8-sig")
+    pd.DataFrame(price_rows).to_csv(price_file, index=False, encoding="utf-8-sig")
+    pd.DataFrame(airline_rows).drop_duplicates(subset=["CODE"]).to_csv(airline_file, index=False, encoding="utf-8-sig")
+
+    # ✅ 저장 완료 로그 출력
+    print(f"✅ 모든 CSV 저장 완료!")
+    print(f"📁 항공편 파일: {flight_file} ({len(flight_rows)}건)")
+    print(f"📁 가격 파일:   {price_file} ({len(price_rows)}건)")
+    print(f"📁 항공사 파일: {airline_file} ({len(airline_rows)}건)\n\n")
 
 
 if __name__ == "__main__":

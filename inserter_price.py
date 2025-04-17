@@ -11,22 +11,16 @@ def insert_price_data(file_name):
 
     # 날짜 컬럼을 datetime 형식으로 변환
     price_df['SEARCH_DATE'] = pd.to_datetime(price_df['SEARCH_DATE'], errors='coerce')
-    price_df['CREATE_AT'] = pd.to_datetime(price_df['CREATE_AT'], errors='coerce')
-    price_df['UPDATE_AT'] = pd.to_datetime(price_df['UPDATE_AT'], errors='coerce')
 
     for index, row in price_df.iterrows():
         # 가격 데이터를 PRICE_INFO 테이블에 삽입
         cursor.execute("""
-            INSERT INTO C##DDD.PRICE_INFO (SEARCH_DATE, PRICE, FLIGHT_INFO_ID, CREATE_AT, UPDATE_AT, DELETE_AT, DELETE_YN)
-            VALUES (:SEARCH_DATE, :PRICE, :FLIGHT_INFO_ID, :CREATE_AT, :UPDATE_AT, :DELETE_AT, :DELETE_YN)
+            INSERT INTO C##DDD.PRICE_INFO (SEARCH_DATE, PRICE, FLIGHT_INFO_ID)
+            VALUES (:SEARCH_DATE, :PRICE, :FLIGHT_INFO_ID)
         """, {
             "SEARCH_DATE": row['SEARCH_DATE'],
             "PRICE": row['PRICE'],
-            "FLIGHT_INFO_ID": row['FLIGHT_INFO_ID'],
-            "CREATE_AT": row['CREATE_AT'],
-            "UPDATE_AT": row['UPDATE_AT'],
-            "DELETE_AT": None,  # DELETE_AT을 NULL로 설정
-            "DELETE_YN": row['DELETE_YN']
+            "FLIGHT_INFO_ID": row['FLIGHT_INFO_ID']
         })
 
     # 커밋 후 연결 종료
@@ -38,8 +32,7 @@ def insert_price_data(file_name):
 
 def get_db_connection():
     dsn = cx_Oracle.makedsn("localhost", 1521, service_name="XE")
-    connection = cx_Oracle.connect(user="C##DDD", password="123123", dsn=dsn)
-    return connection
+    return cx_Oracle.connect(user="C##DDD", password="123123", dsn=dsn)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
