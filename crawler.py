@@ -3,10 +3,18 @@ import requests
 import json
 import time
 import os
+import random
 from datetime import datetime, timedelta
 import pandas as pd
 
 global route_id, date_suffix
+
+
+def generate_gecko_user_agent():
+    random_days = random.randint(0, 364)
+    fake_date = (datetime(2020, 1, 1) + timedelta(days=random_days)).strftime("%Y%m%d")
+    return f"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/{fake_date} Firefox/123.0"
+
 
 # ✈️ 항공권 데이터 수집 함수
 def collect_flight_data(departure_airport, arrival_airport, departure_date, max_requests=3):
@@ -16,7 +24,7 @@ def collect_flight_data(departure_airport, arrival_airport, departure_date, max_
         "referer": f"https://flight.naver.com/flights/international/{departure_airport}-{arrival_airport}-{departure_date}?adult=1&isDirect=true&fareType=Y",
         "origin": "https://flight.naver.com",
         "content-type": "application/json",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
+        "user-agent": generate_gecko_user_agent()
     }
 
     query = """
@@ -76,6 +84,7 @@ def collect_flight_data(departure_airport, arrival_airport, departure_date, max_
 
     for i in range(1, max_requests + 1):
         res = requests.post(url, headers=headers, data=json.dumps(payload))
+        time.sleep(random.uniform(5, 10))
         if res.status_code != 200:
             print(f"❌ 요청 실패! status={res.status_code}")
             print("응답 내용:", res.text)
@@ -160,9 +169,10 @@ def collect_flight_data(departure_airport, arrival_airport, departure_date, max_
                     })
 
             schedules_dict[flight_id].setdefault("appeared_in", []).append(i)
-
-        time.sleep(2)
-
+            
+        # 요청 루프 안에서 사용
+        time.sleep(random.uniform(2, 4))
+        
     return schedules_dict, airline_dict
 
 
@@ -176,9 +186,9 @@ def collect_multi_days_and_save(departure_airport, arrival_airport):
     schedules_all = {}
     airlines_all = {}
 
-    for delta in range(1, 120):
+    for delta in range(1, 200):
         target_date = (today + timedelta(days=delta)).strftime("%Y%m%d")
-        print(f"\n📅 {departure_airport}_{arrival_airport} 수집 중: {target_date}")
+        print(f"\n📅 {departure_airport}_{arrival_airport} 수집 중: {target_date} (+{delta}일 / +200일)")
         schedules, airlines = collect_flight_data(departure_airport, arrival_airport, target_date)
         schedules_all.update(schedules)
         airlines_all.update(airlines)
