@@ -11,7 +11,7 @@ global route_id, date_suffix
 
 
 def generate_gecko_user_agent():
-    random_days = random.randint(0, 364)
+    random_days = random.randint(0, 365)
     fake_date = (datetime(2020, 1, 1) + timedelta(days=random_days)).strftime("%Y%m%d")
     return f"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/{fake_date} Firefox/123.0"
 
