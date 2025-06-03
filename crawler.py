@@ -16,7 +16,7 @@ def generate_gecko_user_agent():
     return f"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/{fake_date} Firefox/123.0"
 
 
-# ✈️ 항공권 데이터 수집 함수ss
+# ✈️ 항공권 데이터 수집 함수ssSㄴㄴㅁㅇ
 def collect_flight_data(departure_airport, arrival_airport, departure_date, max_requests=3):
     url = "https://airline-api.naver.com/graphql"
 
